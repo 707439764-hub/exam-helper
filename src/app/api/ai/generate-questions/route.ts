@@ -1,14 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateQuestions } from "@/lib/deepseek";
-import { supabase } from "@/lib/supabase";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { category, questionType, count = 5 } = body;
 
+    // 如果没有配置数据库，返回模拟数据
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        questions: [
+          {
+            id: "demo_1",
+            type: "single_choice",
+            stem: "（演示模式）请先配置 Supabase 数据库以使用完整功能",
+            options: [
+              { label: "A", text: "了解" },
+              { label: "B", text: "知道了" },
+            ],
+            answer: "A",
+            explanation: "配置 Supabase 后，AI 将根据真实知识点生成题目。",
+            difficulty: 1,
+          },
+        ],
+      });
+    }
+
+    const db = getSupabase();
+
     // 从数据库获取知识点
-    let query = supabase
+    let query = db
       .from("knowledge_points")
       .select("id, title, content, category");
 
@@ -48,7 +70,7 @@ export async function POST(request: NextRequest) {
       difficulty: q.difficulty || 3,
     }));
 
-    const { data: saved, error: insertError } = await supabase
+    const { data: saved, error: insertError } = await db
       .from("questions")
       .insert(questionsToInsert)
       .select();

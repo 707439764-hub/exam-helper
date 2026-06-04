@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 // 获取知识点列表
 export async function GET(request: NextRequest) {
   try {
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({ data: [] });
+    }
+
+    const db = getSupabase();
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    let query = supabase
+    let query = db
       .from("knowledge_points")
       .select("*")
       .order("created_at", { ascending: false })
@@ -39,6 +44,14 @@ export async function GET(request: NextRequest) {
 // 创建知识点
 export async function POST(request: NextRequest) {
   try {
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: "数据库未配置，请先设置 Supabase" },
+        { status: 500 }
+      );
+    }
+
+    const db = getSupabase();
     const body = await request.json();
     const { title, content, category, tags, source } = body;
 
@@ -49,7 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("knowledge_points")
       .insert({
         title,
