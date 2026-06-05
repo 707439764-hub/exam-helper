@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,92 +10,91 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  CheckCircle, XCircle, Lightbulb, Loader2, Brain, RotateCcw, BookOpen, StopCircle,
+  CheckCircle, XCircle, Lightbulb, Brain, RotateCcw, BookOpen, StopCircle,
+  Database,
 } from "lucide-react";
 
 interface Question {
   id: string;
-  module?: string;
+  module: string;
   stem: string;
   options: { label: string; text: string }[];
   answer: string;
   explanation: string;
 }
 
-// 历史记录项
 interface HistoryItem {
   q: Question;
   userAnswer: string;
   isCorrect: boolean;
 }
 
+const MOD_MAP: Record<string, string> = {
+  "全部": "",
+  "管理学": "管理学",
+  "党建时政": "党建时政",
+  "南航专项": "南航专项",
+  "行测": "行测",
+};
+
 export default function PracticePage() {
   const [started, setStarted] = useState(false);
   const [category, setCategory] = useState("全部");
+  const [bank, setBank] = useState<Question[]>([]);
+  const [bankLoaded, setBankLoaded] = useState(false);
 
-  // 当前题目
   const [current, setCurrent] = useState<Question | null>(null);
-  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [curAns, setCurAns] = useState("");
-  const [genError, setGenError] = useState("");
-
-  // 历史记录
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [stopped, setStopped] = useState(false);
-
-  // 防止重复请求
-  const fetchingRef = useRef(false);
+  const [usedIds, setUsedIds] = useState<Set<string>>(new Set());
 
   const correctCount = history.filter((h) => h.isCorrect).length;
 
-  // 保存错题
+  // 加载题库
+  useEffect(() => {
+    fetch("/data/question-bank.json")
+      .then((r) => r.json())
+      .then((data) => { setBank(data); setBankLoaded(true); })
+      .catch(() => setBankLoaded(true));
+  }, []);
+
   const saveWrong = (q: Question, userAnswer: string) => {
     try {
       const stored = localStorage.getItem("wrong_answers");
       const wrong = stored ? JSON.parse(stored) : [];
       wrong.push({ q: { ...q, id: Date.now().toString() }, userAnswer, date: new Date().toISOString().slice(0, 10) });
-      localStorage.setItem("wrong_answers", JSON.stringify(wrong.slice(-50)));
+      localStorage.setItem("wrong_answers", JSON.stringify(wrong.slice(-100)));
     } catch (_) {}
   };
 
-  // 获取一道新题
-  const fetchQuestion = async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    setLoading(true);
-    setGenError("");
-    setSubmitted(false);
-    setCurAns("");
-    try {
-      const res = await fetch("/api/ai/generate-questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, count: 1 }),
-      });
-      const data = await res.json();
-      if (data.questions?.length) {
-        setCurrent(data.questions[0]);
-      } else {
-        setGenError(data.error || "出题失败");
-      }
-    } catch {
-      setGenError("网络错误，请重试");
-    } finally {
-      setLoading(false);
-      fetchingRef.current = false;
+  // 从题库随机取一题
+  const pickQuestion = () => {
+    const modFilter = MOD_MAP[category] || "";
+    const pool = modFilter ? bank.filter((q) => q.module === modFilter) : bank;
+    const available = pool.filter((q) => !usedIds.has(q.id));
+    if (available.length === 0) {
+      // 全部用完，重置
+      setUsedIds(new Set());
+      const reset = pool;
+      const q = reset[Math.floor(Math.random() * reset.length)];
+      setUsedIds(new Set([q.id]));
+      return q;
     }
+    const q = available[Math.floor(Math.random() * available.length)];
+    setUsedIds((prev) => new Set(prev).add(q.id));
+    return q;
   };
 
-  // 开始练习
-  const handleStart = async () => {
+  const handleStart = () => {
     setStarted(true);
     setHistory([]);
     setStopped(false);
-    await fetchQuestion();
+    setUsedIds(new Set());
+    setCurrent(pickQuestion());
   };
 
-  // 提交答案
   const handleSubmit = () => {
     if (!current || !curAns) return;
     setSubmitted(true);
@@ -104,46 +103,49 @@ export default function PracticePage() {
     if (!isCorrect) saveWrong(current, curAns);
   };
 
-  // 下一题
-  const handleNext = async () => {
-    setCurrent(null);
-    await fetchQuestion();
+  const handleNext = () => {
+    setSubmitted(false);
+    setCurAns("");
+    setCurrent(pickQuestion());
   };
 
-  // 结束练习
-  const handleStop = () => {
-    setStopped(true);
-  };
+  const handleStop = () => setStopped(true);
 
-  // ===== 首页：选择分类 =====
+  // ===== 首页 =====
   if (!started) {
+    const counts: Record<string, number> = { "管理学": 0, "党建时政": 0, "南航专项": 0, "行测": 0 };
+    bank.forEach((q) => { if (q.module in counts) counts[q.module]++; });
+
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">随机练习</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AI 逐题出题 · 无限练习 · 不限题量
+            {bankLoaded ? `题库 ${bank.length} 题 · 随机出题 · 无限练习` : "加载题库中..."}
           </p>
         </div>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">选择知识范围</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">选择范围</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>出题范围</Label>
               <Select value={category} onValueChange={(v) => setCategory(v || "全部")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="全部">全部范围</SelectItem>
-                  <SelectItem value="管理学">管理学案例 + 理论</SelectItem>
-                  <SelectItem value="党建">党建 + 时政 + 政绩观</SelectItem>
-                  <SelectItem value="公文新闻">南航文化 + 公司战略</SelectItem>
-                  <SelectItem value="行业知识">十五五规划 + 行业知识</SelectItem>
+                  <SelectItem value="全部">全部（{bank.length}题）</SelectItem>
+                  <SelectItem value="管理学">管理学（{counts["管理学"]}题）</SelectItem>
+                  <SelectItem value="党建时政">党建时政（{counts["党建时政"]}题）</SelectItem>
+                  <SelectItem value="南航专项">南航专项（{counts["南航专项"]}题）</SelectItem>
+                  <SelectItem value="行测">行测（{counts["行测"]}题）</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleStart} className="w-full" size="lg">
+            {bank.length === 0 && bankLoaded && (
+              <div className="bg-yellow-50 rounded-lg p-3 text-sm text-yellow-700 flex items-center gap-2">
+                ⚠️ 题库为空，请运行 <code className="bg-white px-1 rounded">node scripts/gen-questions.mjs</code> 生成题目
+              </div>
+            )}
+            <Button onClick={handleStart} className="w-full" size="lg" disabled={bank.length === 0}>
               <Brain size={18} className="mr-2" />开始随机练习
             </Button>
           </CardContent>
@@ -165,7 +167,6 @@ export default function PracticePage() {
             <p className="text-muted-foreground">正确率 {acc}%</p>
           </CardContent>
         </Card>
-
         {history.length > 0 && (
           <div className="space-y-3">
             {history.map((h, i) => (
@@ -184,7 +185,6 @@ export default function PracticePage() {
             ))}
           </div>
         )}
-
         <div className="flex gap-3 justify-center">
           <Button onClick={() => { setStarted(false); setStopped(false); }} size="lg"><RotateCcw size={16} className="mr-1" />重新开始</Button>
           <Link href="/quiz/review"><Button variant="outline" size="lg"><BookOpen size={16} className="mr-1" />错题回顾</Button></Link>
@@ -193,14 +193,11 @@ export default function PracticePage() {
     );
   }
 
-  // ===== 加载中 =====
-  if (loading || !current) {
+  // ===== 无题目 =====
+  if (!current) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-4">
-          <Loader2 size={32} className="animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">AI 命题组出题中...</p>
-        </div>
+        <Database size={32} className="animate-pulse text-muted-foreground" />
       </div>
     );
   }
@@ -208,12 +205,9 @@ export default function PracticePage() {
   // ===== 答题中 =====
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* 顶部信息 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            📝 第 {history.length + 1} 题
-          </Badge>
+          <Badge variant="secondary" className="text-sm px-3 py-1">📝 第 {history.length + 1} 题</Badge>
           {current.module && <Badge className="text-xs" variant="outline">{current.module}</Badge>}
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -225,13 +219,6 @@ export default function PracticePage() {
         </div>
       </div>
 
-      {genError && (
-        <div className="bg-red-50 text-red-600 rounded-lg p-3 text-sm flex gap-2">
-          <XCircle size={16} className="mt-0.5 shrink-0" />{genError}
-        </div>
-      )}
-
-      {/* 题目 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-normal leading-relaxed">{current.stem}</CardTitle>
@@ -256,7 +243,6 @@ export default function PracticePage() {
         </CardContent>
       </Card>
 
-      {/* 解析 */}
       {submitted && (
         <Card className="border-2 border-blue-200 bg-blue-50/50">
           <CardContent className="p-4">
@@ -265,22 +251,16 @@ export default function PracticePage() {
                 ? <><CheckCircle size={18} className="text-green-500" /><span className="font-medium text-green-700">正确！</span></>
                 : <><XCircle size={18} className="text-red-500" /><span className="font-medium text-red-700">错误 · 正确答案：{current.answer}</span></>}
             </div>
-            <div className="flex gap-2">
-              <Lightbulb size={16} className="text-yellow-500 mt-0.5 shrink-0" />
-              <p className="text-sm text-muted-foreground">{current.explanation}</p>
-            </div>
+            <div className="flex gap-2"><Lightbulb size={16} className="text-yellow-500 mt-0.5 shrink-0" /><p className="text-sm text-muted-foreground">{current.explanation}</p></div>
           </CardContent>
         </Card>
       )}
 
-      {/* 按钮 */}
       <div className="flex gap-3 justify-center">
         {!submitted ? (
           <Button onClick={handleSubmit} disabled={!curAns} size="lg" className="px-12">提交答案</Button>
         ) : (
-          <Button onClick={handleNext} size="lg" className="px-12">
-            下一题 <Loader2 size={16} className={`ml-2 ${loading ? "animate-spin" : "hidden"}`} />
-          </Button>
+          <Button onClick={handleNext} size="lg" className="px-12">下一题</Button>
         )}
       </div>
     </div>

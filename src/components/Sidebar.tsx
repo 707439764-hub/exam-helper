@@ -32,8 +32,8 @@ const navItems = [
     icon: Brain,
   },
   {
-    href: "/stats",
-    label: "学习统计",
+    href: "/questions",
+    label: "题库",
     icon: BarChart3,
   },
 ];
