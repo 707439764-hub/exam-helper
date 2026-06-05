@@ -31,11 +31,15 @@ export async function POST(request: NextRequest) {
 
     let questions;
     let usedAI = false;
+    const hasKey = !!process.env.DEEPSEEK_API_KEY;
+    console.log("[出题] API Key配置:", hasKey, "Key长度:", process.env.DEEPSEEK_API_KEY?.length || 0);
     try {
       questions = await callAI(selected, count);
       usedAI = true;
-    } catch (aiError) {
-      console.error("AI调用失败，使用本地:", aiError);
+      console.log("[出题] AI调用成功，生成", questions.length, "道题");
+    } catch (aiError: unknown) {
+      const msg = aiError instanceof Error ? aiError.message : String(aiError);
+      console.error("[出题] AI调用失败:", msg);
       questions = generateLocal(selected, count);
     }
 
