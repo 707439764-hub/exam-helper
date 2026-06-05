@@ -15,10 +15,10 @@ const KEY = process.env.DEEPSEEK_API_KEY;
 const BASE = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/anthropic";
 
 const PLAN = [
-  { category: "管理学", module: "管理学", count: 500, perBatch: 20 },
-  { category: "党建", module: "党建时政", count: 200, perBatch: 15 },
-  { category: "公文新闻", module: "南航专项", count: 200, perBatch: 15 },
-  { category: "行业知识", module: "行测", count: 100, perBatch: 10 },
+  { category: "管理学", module: "管理学", count: 500, perBatch: 25 },
+  { category: "党建", module: "党建时政", count: 200, perBatch: 20 },
+  { category: "公文新闻", module: "南航专项", count: 200, perBatch: 20 },
+  { category: "行业知识", module: "行测", count: 100, perBatch: 15 },
 ];
 
 let allQuestions = [];
@@ -66,10 +66,27 @@ async function callAI(module, batchSize) {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = await response.json();
   const textContent = data.content?.find((c) => c.type === "text");
-  const text = textContent?.text || "";
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("无JSON");
-  const parsed = JSON.parse(jsonMatch[0]);
+  let text = textContent?.text || "";
+
+  // 多策略JSON提取
+  let parsed;
+  // 策略1：标准JSON
+  let m = text.match(/\{[\s\S]*\}/);
+  if (m) try { parsed = JSON.parse(m[0]); } catch (_) {}
+  // 策略2：修复常见错误后重试
+  if (!parsed && m) {
+    try {
+      const fixed = m[0].replace(/([^\\])\\([^"\\\/bfnrtu])/g, '$1$2');
+      parsed = JSON.parse(fixed);
+    } catch (_) {}
+  }
+  // 策略3：用代码块
+  if (!parsed) {
+    m = text.match(/```json\s*([\s\S]*?)```/);
+    if (m) try { parsed = JSON.parse(m[1]); } catch (_) {}
+  }
+  if (!parsed) throw new Error("JSON解析失败");
+
   return (parsed.questions || []).map((q, i) => ({
     id: `${module}_${Date.now()}_${i}_${Math.random().toString(36).slice(2,6)}`,
     module: q.module || module,
@@ -109,11 +126,11 @@ async function main() {
         console.log(`✅ +${qs.length} | 总计 ${completed[plan.module]}/${plan.count}`);
       } catch (err) {
         console.log(`❌ ${err.message.slice(0, 60)}`);
-        // 失败等待后重试
-        await sleep(3000);
+        // 失败后短暂等待重试
+        await sleep(1000);
       }
       // 避免限流
-      await sleep(1500);
+      await sleep(300);
     }
   }
 
