@@ -113,9 +113,9 @@ export default function PracticePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">AI 智能出题</h1>
+          <h1 className="text-2xl font-bold">管理胜任力测评</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            基于知识库内容，AI 实时生成单选题
+            南方新华猎头命题风格 · AI实时生成管理情景题
           </p>
         </div>
 
@@ -174,7 +174,7 @@ export default function PracticePage() {
               {generating ? (
                 <>
                   <Loader2 size={18} className="mr-2 animate-spin" />
-                  AI 正在生成题目...
+                  命题组正在出题...
                 </>
               ) : (
                 <>

@@ -23,7 +23,7 @@ const navItems = [
   },
   {
     href: "/knowledge",
-    label: "知识点管理",
+    label: "知识库",
     icon: BookOpen,
   },
   {
