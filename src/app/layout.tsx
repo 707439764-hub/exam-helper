@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
+import { AppLayout } from "@/components/AppLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "南航干部竞聘考试复习系统",
-  description: "南航干部竞聘考试备考助手 - 知识点管理、AI总结、智能出题",
+  title: "备考复习系统",
+  description: "备考助手 - 知识点管理、AI总结、智能出题",
 };
 
 export default function RootLayout({
@@ -28,11 +28,8 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col md:flex-row">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-muted/30">
-          <div className="p-4 md:p-8 max-w-6xl mx-auto">{children}</div>
-        </main>
+      <body className="min-h-full">
+        <AppLayout>{children}</AppLayout>
       </body>
     </html>
   );

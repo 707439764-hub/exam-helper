@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, Loader2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/";
+  const { login } = useAuth();
 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,23 +23,12 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
+    const success = await login(password);
 
-      const data = await res.json();
-
-      if (data.success) {
-        router.push(from);
-      } else {
-        setError(data.error || "密码错误，请重试");
-      }
-    } catch {
-      setError("网络错误，请稍后重试");
-    } finally {
+    if (success) {
+      router.push(from);
+    } else {
+      setError("密码错误，请重试");
       setLoading(false);
     }
   };
