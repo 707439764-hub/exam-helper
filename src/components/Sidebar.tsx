@@ -47,7 +47,7 @@ export function Sidebar() {
       {/* 移动端顶部栏 */}
       <div className="md:hidden flex items-center justify-between p-4 border-b bg-white">
         <Link href="/" className="font-bold text-lg text-primary">
-          ✈️ 南航备考
+          ✈️ 学习助手
         </Link>
         <Button
           variant="ghost"
@@ -79,8 +79,8 @@ export function Sidebar() {
           <Link href="/" className="flex items-center gap-2">
             <span className="text-2xl">✈️</span>
             <div>
-              <h1 className="font-bold text-sm text-foreground">南航干部竞聘</h1>
-              <p className="text-xs text-muted-foreground">考试复习系统</p>
+              <h1 className="font-bold text-sm text-foreground">个人学习</h1>
+              <p className="text-xs text-muted-foreground">学习系统</p>
             </div>
           </Link>
         </div>

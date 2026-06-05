@@ -83,7 +83,7 @@ export default function NewKnowledgePage() {
       // 使用模拟数据演示
       const mockPoints = [
         {
-          title: "南航2024年安全工作部署",
+          title: "2024年安全工作部署",
           content:
             "会议强调坚持安全第一方针，完善SMS体系建设，强化风险管控能力，确保全年安全目标实现。",
           category: "公文新闻",
@@ -140,7 +140,7 @@ export default function NewKnowledgePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
-                placeholder="在此粘贴南航内网公文、新闻、管理学案例或党建文章内容...&#10;&#10;支持粘贴多段内容，AI会自动识别并提取考试相关的知识点。"
+                placeholder="在此粘贴内部资料公文、新闻、管理学案例或党建文章内容...&#10;&#10;支持粘贴多段内容，AI会自动识别并提取学习相关的知识点。"
                 value={articleText}
                 onChange={(e) => setArticleText(e.target.value)}
                 className="min-h-[200px]"
@@ -230,7 +230,7 @@ export default function NewKnowledgePage() {
                 <Label htmlFor="title">知识点标题 *</Label>
                 <Input
                   id="title"
-                  placeholder="例如：南航2024年安全工作报告要点"
+                  placeholder="例如：2024年安全工作报告要点"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />

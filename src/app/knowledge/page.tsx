@@ -19,7 +19,7 @@ import { Plus, Search, FileText, Tag, Trash2 } from "lucide-react";
 const mockData = [
   {
     id: "1",
-    title: "南航2024年度工作报告要点",
+    title: "2024年度工作报告要点",
     content: "报告强调安全运行是民航的生命线...",
     category: "公文新闻",
     tags: ["年度报告", "安全工作", "2024"],
@@ -88,7 +88,7 @@ export default function KnowledgeListPage() {
         <div>
           <h1 className="text-2xl font-bold">知识点管理</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            管理你的所有复习知识点，按分类浏览和搜索
+            管理你的所有学习知识点，按分类浏览和搜索
           </p>
         </div>
         <Link href="/knowledge/new">

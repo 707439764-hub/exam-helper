@@ -49,7 +49,7 @@ export default function QuizPage() {
       <div>
         <h1 className="text-2xl font-bold">题库练习</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          多种练习模式，系统备考
+          多种练习模式，系统学习
         </p>
       </div>
 
@@ -74,9 +74,9 @@ export default function QuizPage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-red-50 to-red-100 border-red-200 h-full">
             <CardContent className="p-6 text-center">
               <BarChart3 size={32} className="mx-auto text-red-500 mb-3" />
-              <h3 className="font-bold text-lg">模拟考试</h3>
+              <h3 className="font-bold text-lg">模拟练习</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                限时作答，真实模拟考试场景
+                限时作答，真实模拟练习场景
               </p>
               <Badge variant="secondary" className="mt-3">
                 限时模式
@@ -91,10 +91,10 @@ export default function QuizPage() {
               <BookOpen size={32} className="mx-auto text-yellow-600 mb-3" />
               <h3 className="font-bold text-lg">错题回顾</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                复习做错的题目，查漏补缺
+                回顾做错的题目，查漏补缺
               </p>
               <Badge variant="secondary" className="mt-3">
-                重点复习
+                重点回顾
               </Badge>
             </CardContent>
           </Card>

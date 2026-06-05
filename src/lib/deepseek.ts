@@ -40,7 +40,7 @@ async function callDeepSeek(
 }
 
 /**
- * 从文本中提取考试知识点
+ * 从文本中提取学习知识点
  */
 export async function extractKnowledgePoints(
   articleText: string
@@ -52,10 +52,10 @@ export async function extractKnowledgePoints(
     tags: string[];
   }[]
 > {
-  const systemPrompt = `你是一位南航干部竞聘考试的备考专家。你的任务是从用户提供的公文中提取考试相关的知识点。
+  const systemPrompt = `你是一位学习知识整理助手。你的任务是从用户提供的公文中提取学习相关的知识点。
 
-考试范围包括四大类：
-1. 公文新闻 - 南航内部公文、新闻报道中的重要信息
+知识范围包括四大类：
+1. 公文新闻 - 内部公文、新闻报道中的重要信息
 2. 管理学 - 管理学理论、案例分析要点
 3. 党建 - 党建基础知识、政策方针
 4. 行业知识 - 航空行业专业知识
@@ -68,7 +68,7 @@ export async function extractKnowledgePoints(
 
 请以JSON格式返回，格式为：{"points": [{"title": "...", "content": "...", "category": "...", "tags": [...]}, ...]}`;
 
-  const userMessage = `请从以下文章中提取考试知识点：\n\n${articleText}`;
+  const userMessage = `请从以下文章中提取学习知识点：\n\n${articleText}`;
 
   const result = await callDeepSeek(
     [{ role: "user", content: userMessage }],
@@ -108,11 +108,11 @@ export async function generateQuestions(
     )
     .join("\n\n");
 
-  const systemPrompt = `你是一位南航干部竞聘考试出题专家。请根据提供的知识点生成高质量的考试题目。
+  const systemPrompt = `你是一位知识题库出题助手。请根据提供的知识点生成高质量的练习题目。
 
 题目要求：
 - 紧扣知识点，考察核心内容
-- 题目难度适中，适合干部竞聘备考
+- 题目难度适中，适合学习
 - 每道题都要有详细的解析，解释为什么选这个答案
 - 案例分析题要结合管理实践
 

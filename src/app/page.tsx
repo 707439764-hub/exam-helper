@@ -24,7 +24,7 @@ const categories = [
 const recentKnowledge = [
   {
     id: "1",
-    title: "南航2024年度工作报告要点",
+    title: "2024年度工作报告要点",
     category: "公文新闻",
     date: "2024-06-01",
   },
@@ -48,10 +48,10 @@ export default function HomePage() {
       {/* 欢迎横幅 */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-xl p-6 md:p-8">
         <h2 className="text-2xl font-bold mb-2">
-          欢迎回来，备考加油！💪
+          欢迎回来，学习加油！💪
         </h2>
         <p className="text-blue-100 mb-4">
-          南航干部竞聘考试复习系统 — 智能总结知识点、AI出题练习、学习进度追踪
+          个人学习助手 — 智能总结知识点、AI出题练习、学习进度追踪
         </p>
         <div className="flex gap-3 flex-wrap">
           <Link href="/knowledge/new">
@@ -162,7 +162,7 @@ export default function HomePage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-red-50 to-red-100 border-red-200">
             <CardContent className="p-4 text-center">
               <BarChart3 size={24} className="mx-auto text-red-500 mb-1" />
-              <span className="text-sm font-medium">模拟考试</span>
+              <span className="text-sm font-medium">模拟练习</span>
             </CardContent>
           </Card>
         </Link>

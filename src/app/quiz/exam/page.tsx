@@ -124,20 +124,20 @@ export default function ExamPage() {
     (q) => answers[q.id] === q.answer
   ).length;
 
-  // 考试设置
+  // 练习设置
   if (!started) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">模拟考试</h1>
+          <h1 className="text-2xl font-bold">模拟练习</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            限时模拟考试，检验你的真实水平
+            限时模拟练习，检验你的真实水平
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">考试设置</CardTitle>
+            <CardTitle className="text-base">练习设置</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -156,13 +156,13 @@ export default function ExamPage() {
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-sm text-yellow-700">
-                ⚠️ 考试开始后将计时，时间用完自动交卷。请确保在安静环境下作答。
+                ⚠️ 练习开始后将计时，时间用完自动交卷。请确保在安静环境下作答。
               </p>
             </div>
 
             <Button onClick={() => setStarted(true)} className="w-full">
               <AlarmClock size={16} className="mr-2" />
-              开始考试
+              开始练习
             </Button>
 
             <Link href="/quiz">
@@ -177,7 +177,7 @@ export default function ExamPage() {
     );
   }
 
-  // 考试结束页面
+  // 练习结束页面
   if (finished) {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
@@ -186,7 +186,7 @@ export default function ExamPage() {
             <div className="text-4xl mb-4">
               {score >= questions.length * 0.6 ? "🎉" : "📚"}
             </div>
-            <h2 className="text-2xl font-bold mb-2">考试结束</h2>
+            <h2 className="text-2xl font-bold mb-2">练习结束</h2>
             <div className="text-5xl font-bold text-primary my-6">
               {score} / {questions.length}
             </div>
@@ -199,7 +199,7 @@ export default function ExamPage() {
         <div className="flex gap-3 justify-center">
           <Link href="/quiz/exam">
             <Button variant="outline">
-              重新考试
+              重新练习
             </Button>
           </Link>
           <Link href="/quiz/review">
@@ -213,7 +213,7 @@ export default function ExamPage() {
     );
   }
 
-  // 考试进行中
+  // 练习进行中
   return (
     <div className="space-y-6 max-w-3xl">
       {/* 顶部信息 */}
@@ -314,7 +314,7 @@ export default function ExamPage() {
           </Button>
         ) : (
           <Button onClick={handleNext}>
-            {currentIndex + 1 >= questions.length ? "完成考试" : "下一题"}
+            {currentIndex + 1 >= questions.length ? "完成练习" : "下一题"}
             <ArrowRight size={16} className="ml-1" />
           </Button>
         )}

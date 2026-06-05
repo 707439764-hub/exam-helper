@@ -39,7 +39,7 @@ function LoginForm() {
         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
           <Lock size={24} className="text-primary" />
         </div>
-        <CardTitle className="text-xl">备考复习系统</CardTitle>
+        <CardTitle className="text-xl">个人学习助手</CardTitle>
         <p className="text-sm text-muted-foreground mt-1">请输入密码进入</p>
       </CardHeader>
       <CardContent className="space-y-4">

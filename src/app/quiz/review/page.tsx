@@ -89,7 +89,7 @@ export default function ReviewPage() {
         <div>
           <h1 className="text-2xl font-bold">错题回顾</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            复习做错的题目，加深理解
+            回顾做错的题目，加深理解
           </p>
         </div>
       </div>
