@@ -118,11 +118,11 @@ export default function PracticePage() {
               <Select value={category} onValueChange={(v) => setCategory(v || "全部")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="全部">全部范围（推荐）</SelectItem>
-                  <SelectItem value="管理学">管理学 + 管理情景</SelectItem>
-                  <SelectItem value="党建">党建 + 时政</SelectItem>
-                  <SelectItem value="公文新闻">公文 + 公司战略</SelectItem>
-                  <SelectItem value="行业知识">行业 + 专业知识</SelectItem>
+                  <SelectItem value="全部">全部（推荐）</SelectItem>
+                  <SelectItem value="管理学">管理学案例 + 理论</SelectItem>
+                  <SelectItem value="党建">党建 + 时政 + 政绩观</SelectItem>
+                  <SelectItem value="公文新闻">南航文化 + 公司战略</SelectItem>
+                  <SelectItem value="行业知识">十五五规划 + 行业知识</SelectItem>
                 </SelectContent>
               </Select>
             </div>
