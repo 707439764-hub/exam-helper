@@ -16,6 +16,7 @@ import {
 
 interface Question {
   id: string;
+  module?: string;
   stem: string;
   options: { label: string; text: string }[];
   answer: string;
@@ -30,6 +31,7 @@ export default function PracticePage() {
   const [category, setCategory] = useState("全部");
   const [mode, setMode] = useState("quick");
   const [genError, setGenError] = useState("");
+  const [localMode, setLocalMode] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -80,6 +82,7 @@ export default function PracticePage() {
       const data = await res.json();
       if (data.questions?.length) {
         setQuestions(data.questions);
+        setLocalMode(data.usedAI === false);
         setCurrentIndex(0);
         setAnswers({});
         setSubmitted(false);
@@ -207,9 +210,18 @@ export default function PracticePage() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>第 {currentIndex + 1}/{questions.length} 题</span>
-        <span>已答 {Object.keys(answers).length} 题</span>
+        <div className="flex items-center gap-2">
+          {cur.module && <Badge className="text-xs" variant="secondary">{cur.module}</Badge>}
+          <span>已答 {Object.keys(answers).length} 题</span>
+        </div>
         <Badge className="bg-blue-100 text-blue-700">单选题</Badge>
       </div>
+
+      {localMode && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs text-yellow-700 flex items-center gap-2">
+          ⚠️ 未配置AI Key，当前为模板出题。请在Vercel设置DEEPSEEK_API_KEY环境变量以启用AI出题。
+        </div>
+      )}
 
       <div className="w-full bg-muted rounded-full h-1.5">
         <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />

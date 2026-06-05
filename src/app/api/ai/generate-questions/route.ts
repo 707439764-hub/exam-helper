@@ -24,13 +24,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "该分类下暂无知识点" }, { status: 400 });
     }
 
-    // 随机抽取，确保每次不同
+    // 随机抽取素材——喂给AI的素材量随题量增加，确保30题模考有足够多样的素材
     const shuffled = [...kps].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(8, shuffled.length));
+    const materialCount = Math.min(Math.max(count, 12), shuffled.length);
+    const selected = shuffled.slice(0, materialCount);
 
     let questions;
+    let usedAI = false;
     try {
       questions = await callAI(selected, count);
+      usedAI = true;
     } catch (aiError) {
       console.error("AI调用失败，使用本地:", aiError);
       questions = generateLocal(selected, count);
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
       } catch (_) {}
     }
 
-    return NextResponse.json({ questions });
+    return NextResponse.json({ questions, usedAI });
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "出题失败" },
@@ -82,15 +85,22 @@ async function callAI(
 3.题目不重复，结合本年度最新南航发文、时政文件；
 4.每道题附带精炼考点速记解析。
 
-严格JSON格式：
-{"questions":[{"type":"single_choice","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
+【避免笼统——这是质量红线】
+- 管理学案例题必须有具体情境：具体机型(B737/A320/C909)、具体故障(液压渗漏/EDP漏油/发动机滑油消耗超标)、具体约束(过站45分钟/航材未到/人员资质)、具体冲突(运行正点vs安全裕度)，让考生像在真实值班一样做决策。严禁出现"关于XX，以下理解正确的是"这类空泛问法。
+- 党建时政题要落到具体表述、具体文件、具体数字(如"十五五"规划期2026-2030、四中全会时间、四个意识具体内容)，考查精确记忆而非模糊判断。
+- 行测题要给出完整可解的题目(数字运算给全数据、逻辑判断给完整前提、图形推理用文字描述规律)，确保有唯一正确答案。
+- 四个选项长度相近、迷惑性强，正确答案位置随机分布(不要总是某个字母)。
+- 解析要点出"为什么对"和"错项错在哪"，附记忆口诀或要点。
 
-  const userMessage = `命题素材：\n${kpText}\n\n请生成${count}道单选题，优先按配比：管理学约${Math.round(count*8/30)}题、党建时政约${Math.round(count*9/30)}题、南航专项约${Math.round(count*5/30)}题、行测约${Math.round(count*6/30)}题、民航法规约${Math.round(count*2/30)}题。`;
+严格JSON格式：
+{"questions":[{"type":"single_choice","module":"管理学|党建时政|南航专项|行测|民航法规","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
+
+  const userMessage = `命题素材（仅供参考，可结合你掌握的南航及时政知识扩展）：\n${kpText}\n\n请生成${count}道高质量单选题，优先按配比：管理学约${Math.round(count*8/30)}题、党建时政约${Math.round(count*9/30)}题、南航专项约${Math.round(count*5/30)}题、行测约${Math.round(count*6/30)}题、民航法规约${Math.round(count*2/30)}题。务必具体、不笼统，每道题都要让考生有真实考场的感觉。`;
 
   const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": DEEPSEEK_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 8192, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
+    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 8192, temperature: 1.0, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
   });
 
   if (!response.ok) throw new Error(`API错误: ${response.status}`);
@@ -101,6 +111,7 @@ async function callAI(
     const parsed = JSON.parse(jsonMatch[0]);
     return (parsed.questions || []).map((q: Record<string, unknown>, i: number) => ({
       id: `ai_${Date.now()}_${i}`, type: "single_choice",
+      module: q.module || "",
       stem: q.stem, options: q.options || [],
       answer: q.answer, explanation: q.explanation || "", difficulty: 3,
     }));
