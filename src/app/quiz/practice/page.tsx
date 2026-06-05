@@ -22,12 +22,13 @@ interface Question {
   explanation: string;
 }
 
-const BATCH_SIZE = 5;
+const BATCH_SIZES: Record<string, number> = { quick: 5, normal: 10, exam: 30 };
 
 export default function PracticePage() {
   const [started, setStarted] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [category, setCategory] = useState("全部");
+  const [mode, setMode] = useState("quick");
   const [genError, setGenError] = useState("");
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -74,7 +75,7 @@ export default function PracticePage() {
       const res = await fetch("/api/ai/generate-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, count: BATCH_SIZE }),
+        body: JSON.stringify({ category, count: BATCH_SIZES[mode] || 5 }),
       });
       const data = await res.json();
       if (data.questions?.length) {
@@ -105,7 +106,7 @@ export default function PracticePage() {
         <div>
           <h1 className="text-2xl font-bold">管理胜任力测评</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            南方新华命题风格 · AI随机出题 · 每次{BATCH_SIZE}道 · 无限练习
+            南方新华命题风格 · 按配比出题 · 无限练习
           </p>
         </div>
         <Card>
@@ -125,6 +126,19 @@ export default function PracticePage() {
                   <SelectItem value="行业知识">十五五规划 + 行业知识</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>练习模式</Label>
+              <Select value={mode} onValueChange={(v) => setMode(v || "quick")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quick">随机练习（5题/组）</SelectItem>
+                  <SelectItem value="normal">加强练习（10题/组）</SelectItem>
+                  <SelectItem value="exam">成套模考（30题/套）</SelectItem>
+                </SelectContent>
+              </Select>
+              {mode === "exam" && <p className="text-xs text-muted-foreground">按配比：管理学8题+党建9题+南航5题+行测6题+民航法规2题</p>}
             </div>
 
             {genError && (

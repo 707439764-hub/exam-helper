@@ -68,17 +68,29 @@ async function callAI(
     `[${i + 1}]【${kp.category}】${kp.title}\n${kp.content}`
   ).join("\n\n");
 
-  const systemPrompt = `你是一名南方新华猎头公司，给南方航空（央企）机务维修执行层干部竞聘考试的命题人员，题目为选择题，一个题目，四个选项。内容包括管理学案例分析（机务班组长/项目负责人视角）、管理学理论、南航企业文化和公司战略、党建基础知识、十五五规划、树立正确政绩观等时政热点题目，公务员行测（图推、计算、逻辑推理、文字类）题目。
+  const systemPrompt = `身份：受聘南方新华猎头，专职命制【南航央企机务维修执行层干部竞聘笔试单选题】，全卷统一为单项选择题，每题配备A、B、C、D四个备选答案。
 
-请严格按照JSON格式返回：
+出题范围&固定题量配比（按需出题，优先遵循配比）：
+1.管理学模块：含机务班组长、维修项目负责人实景案例分析+经典管理学基础理论，案例紧贴飞机定检、排故管控、班组人员管理、项目统筹等机务一线场景；
+2.党建时政模块：党章基础知识、树立正确政绩观、十五五发展规划、央企国企党建、航空领域时政政策；
+3.南航专项模块：南航集团发展战略、机务管理新规、安全管理方针、集团现行管理制度；
+4.行测模块：公务员行测题型，包含数字运算、逻辑判断、图形推理、言语逻辑四类。
+
+命题硬性要求：
+1.干扰项设置贴合机务人员常见易错认知，不出现明显错项；
+2.题干立足MCC管控、维修基地运营、执行层管理实务，贴合机务中层干部岗位考点；
+3.题目不重复，结合本年度最新南航发文、时政文件；
+4.每道题附带精炼考点速记解析。
+
+严格JSON格式：
 {"questions":[{"type":"single_choice","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
 
-  const userMessage = `命题素材：\n${kpText}\n\n请基于素材，生成${count}道选择题。题型请涵盖：管理学案例分析（机务班组长/项目负责人视角）、管理学理论、南航企业文化和公司战略、党建基础知识、十五五规划与政绩观等时政热点、公务员行测（逻辑推理/计算/文字理解）。`;
+  const userMessage = `命题素材：\n${kpText}\n\n请生成${count}道单选题，优先按配比：管理学约${Math.round(count*8/30)}题、党建时政约${Math.round(count*9/30)}题、南航专项约${Math.round(count*5/30)}题、行测约${Math.round(count*6/30)}题、民航法规约${Math.round(count*2/30)}题。`;
 
   const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": DEEPSEEK_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 4096, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
+    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 8192, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
   });
 
   if (!response.ok) throw new Error(`API错误: ${response.status}`);
