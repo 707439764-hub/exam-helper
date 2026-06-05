@@ -104,12 +104,15 @@ async function callAI(
   const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": DEEPSEEK_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 8192, temperature: 1.0, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
+    body: JSON.stringify({ model: "deepseek-v4-pro", max_tokens: 8192, temperature: 1.0, thinking: { type: "disabled" }, system: systemPrompt, messages: [{ role: "user", content: userMessage }] }),
   });
 
   if (!response.ok) throw new Error(`API错误: ${response.status}`);
   const data = await response.json();
-  const text = data.content[0].text;
+  // DeepSeek v4-pro 默认开启 thinking，content 数组可能包含 thinking 和 text 两种类型
+  const textContent = data.content?.find((c: { type: string }) => c.type === "text");
+  const text = textContent?.text || "";
+  if (!text) throw new Error("AI未返回有效文本内容");
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     const parsed = JSON.parse(jsonMatch[0]);
