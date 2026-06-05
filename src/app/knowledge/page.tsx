@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,68 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, FileText, Tag, Trash2 } from "lucide-react";
-
-// 模拟数据
-const mockData = [
-  {
-    id: "1",
-    title: "2024年度工作报告要点",
-    content: "报告强调安全运行是民航的生命线...",
-    category: "公文新闻",
-    tags: ["年度报告", "安全工作", "2024"],
-    created_at: "2024-06-01",
-  },
-  {
-    id: "2",
-    title: "SWOT分析法在航空企业管理中的应用",
-    content: "SWOT分析通过评估企业的优势、劣势、机会和威胁...",
-    category: "管理学",
-    tags: ["战略管理", "SWOT", "案例分析"],
-    created_at: "2024-05-28",
-  },
-  {
-    id: "3",
-    title: "新时代党的建设总要求",
-    content: "坚持和加强党的全面领导，坚持党要管党、全面从严治党...",
-    category: "党建",
-    tags: ["党建理论", "从严治党"],
-    created_at: "2024-05-25",
-  },
-  {
-    id: "4",
-    title: "民用航空安全管理体系(SMS)要点",
-    content: "安全管理体系包括安全政策、风险管理、安全保证和安全促进四大支柱...",
-    category: "行业知识",
-    tags: ["SMS", "安全管理", "民航"],
-    created_at: "2024-05-20",
-  },
-  {
-    id: "5",
-    title: "波特五力模型分析航空市场竞争格局",
-    content: "五力模型帮助分析行业竞争态势...",
-    category: "管理学",
-    tags: ["竞争战略", "波特五力", "行业分析"],
-    created_at: "2024-05-18",
-  },
-  {
-    id: "6",
-    title: "党的二十大报告关于国企改革论述",
-    content: "深化国资国企改革，加快国有经济布局优化和结构调整...",
-    category: "党建",
-    tags: ["二十大", "国企改革", "政策"],
-    created_at: "2024-05-15",
-  },
-];
+import { Plus, Search, FileText, Tag } from "lucide-react";
+import { knowledgeData } from "@/data/knowledge";
 
 const categories = ["全部", "公文新闻", "管理学", "党建", "行业知识"];
 
 export default function KnowledgeListPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("全部");
-  const [knowledge, setKnowledge] = useState(mockData);
 
-  const filtered = knowledge.filter((kp) => {
+  const filtered = knowledgeData.filter((kp) => {
     const matchSearch =
       kp.title.includes(search) || kp.content.includes(search);
     const matchCategory = category === "全部" || kp.category === category;
@@ -83,12 +31,11 @@ export default function KnowledgeListPage() {
 
   return (
     <div className="space-y-6">
-      {/* 顶部栏 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">知识点管理</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            管理你的所有学习知识点，按分类浏览和搜索
+            管理所有学习知识点，按分类浏览和搜索
           </p>
         </div>
         <Link href="/knowledge/new">
@@ -99,7 +46,6 @@ export default function KnowledgeListPage() {
         </Link>
       </div>
 
-      {/* 搜索和筛选 */}
       <div className="flex gap-3 flex-col sm:flex-row">
         <div className="relative flex-1">
           <Search
@@ -107,7 +53,7 @@ export default function KnowledgeListPage() {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
           />
           <Input
-            placeholder="搜索知识点标题或内容..."
+            placeholder="搜索知识点..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -127,7 +73,6 @@ export default function KnowledgeListPage() {
         </Select>
       </div>
 
-      {/* 知识点列表 */}
       <div className="grid gap-4">
         {filtered.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">

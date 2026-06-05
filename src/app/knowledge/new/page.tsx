@@ -24,6 +24,10 @@ import {
   CheckCircle,
   FileText,
   Tag,
+  Link as LinkIcon,
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 
 export default function NewKnowledgePage() {
@@ -44,6 +48,16 @@ export default function NewKnowledgePage() {
     { title: string; content: string; category: string; tags: string[] }[]
   >([]);
 
+  // URL 抓取状态
+  const [fetchUrl, setFetchUrl] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [fetchCookie, setFetchCookie] = useState("");
+  const [fetchUsername, setFetchUsername] = useState("");
+  const [fetchPassword, setFetchPassword] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+  const [fetchTitle, setFetchTitle] = useState("");
+
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (trimmed && !tags.includes(trimmed)) {
@@ -56,10 +70,44 @@ export default function NewKnowledgePage() {
     setTags(tags.filter((t) => t !== tag));
   };
 
+  // URL 抓取
+  const handleFetchUrl = async () => {
+    if (!fetchUrl.trim()) return;
+    setIsFetching(true);
+    setFetchError("");
+    setFetchTitle("");
+
+    try {
+      const res = await fetch("/api/fetch-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: fetchUrl,
+          cookie: fetchCookie || undefined,
+          username: fetchUsername || undefined,
+          password: fetchPassword || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setArticleText(data.content);
+        setFetchTitle(data.title || "");
+        setFetchError("");
+      } else {
+        setFetchError(data.error || "抓取失败");
+      }
+    } catch {
+      setFetchError("网络错误，请稍后重试");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   // 手动保存知识点
   const handleManualSave = () => {
     if (!title || !content || !category) return;
-    // TODO: 对接 Supabase 存储
     console.log({ title, content, category, tags, source });
     router.push("/knowledge");
   };
@@ -80,7 +128,6 @@ export default function NewKnowledgePage() {
       }
     } catch (error) {
       console.error("AI提取失败:", error);
-      // 使用模拟数据演示
       const mockPoints = [
         {
           title: "2024年安全工作部署",
@@ -105,7 +152,6 @@ export default function NewKnowledgePage() {
 
   // 确认保存AI提取的知识点
   const handleConfirmPoints = () => {
-    // TODO: 批量存入 Supabase
     console.log("保存知识点:", extractedPoints);
     router.push("/knowledge");
   };
@@ -115,7 +161,7 @@ export default function NewKnowledgePage() {
       <div>
         <h1 className="text-2xl font-bold">新增知识点</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          手动创建或使用AI从文章中提炼考点
+          手动创建或使用AI从文章中提炼内容
         </p>
       </div>
 
@@ -131,16 +177,105 @@ export default function NewKnowledgePage() {
 
         {/* AI提炼 Tab */}
         <TabsContent value="ai" className="space-y-4 mt-4">
+          {/* URL 抓取区域 */}
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-medium flex items-center gap-1.5">
+                <LinkIcon size={14} className="text-blue-500" />
+                输入文章链接，自动拉取内容
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="粘贴 OA 文章链接..."
+                  value={fetchUrl}
+                  onChange={(e) => setFetchUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleFetchUrl();
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleFetchUrl}
+                  disabled={!fetchUrl.trim() || isFetching}
+                  variant="secondary"
+                >
+                  {isFetching ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "拉取"
+                  )}
+                </Button>
+              </div>
+
+              {/* 高级选项 */}
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                需要登录认证？展开设置
+              </button>
+              {showAdvanced && (
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Cookie（从浏览器复制）</Label>
+                    <Textarea
+                      placeholder="在 OA 页面按 F12 → Application → Cookies → 复制"
+                      value={fetchCookie}
+                      onChange={(e) => setFetchCookie(e.target.value)}
+                      className="text-xs min-h-[60px]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">用户名</Label>
+                      <Input
+                        placeholder="OA 账号"
+                        value={fetchUsername}
+                        onChange={(e) => setFetchUsername(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">密码</Label>
+                      <Input
+                        type="password"
+                        placeholder="OA 密码"
+                        value={fetchPassword}
+                        onChange={(e) => setFetchPassword(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {fetchError && (
+                <div className="flex items-start gap-2 text-sm text-red-500 bg-red-50 rounded-lg p-2.5">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  {fetchError}
+                </div>
+              )}
+
+              {fetchTitle && (
+                <div className="text-sm text-green-600 bg-green-50 rounded-lg p-2">
+                  ✅ 已抓取：{fetchTitle}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 文本编辑区 */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Sparkles size={18} className="text-blue-500" />
-                粘贴文章内容，AI自动提炼考点
+                文章内容（可编辑后提炼）
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
-                placeholder="在此粘贴内部资料公文、新闻、管理学案例或党建文章内容...&#10;&#10;支持粘贴多段内容，AI会自动识别并提取学习相关的知识点。"
+                placeholder="粘贴文章内容，或在上方输入链接自动拉取...&#10;&#10;支持粘贴多段内容，AI会自动识别并提取相关知识点。"
                 value={articleText}
                 onChange={(e) => setArticleText(e.target.value)}
                 className="min-h-[200px]"

@@ -12,8 +12,8 @@ import {
   TrendingUp,
   FileText,
 } from "lucide-react";
+import { knowledgeData } from "@/data/knowledge";
 
-// 模拟数据 - 实际使用时从 Supabase 获取
 const categories = [
   { name: "公文新闻", icon: "📰", color: "bg-blue-100 text-blue-700" },
   { name: "管理学", icon: "📊", color: "bg-green-100 text-green-700" },
@@ -21,26 +21,7 @@ const categories = [
   { name: "行业知识", icon: "✈️", color: "bg-purple-100 text-purple-700" },
 ];
 
-const recentKnowledge = [
-  {
-    id: "1",
-    title: "2024年度工作报告要点",
-    category: "公文新闻",
-    date: "2024-06-01",
-  },
-  {
-    id: "2",
-    title: "SWOT分析法在航空企业管理中的应用",
-    category: "管理学",
-    date: "2024-05-28",
-  },
-  {
-    id: "3",
-    title: "新时代党的建设总要求",
-    category: "党建",
-    date: "2024-05-25",
-  },
-];
+const recentKnowledge = knowledgeData.slice(0, 5);
 
 export default function HomePage() {
   return (
@@ -80,7 +61,7 @@ export default function HomePage() {
                 <span
                   className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${cat.color}`}
                 >
-                  12 个知识点
+                  {knowledgeData.filter((k) => k.category === cat.name).length} 个知识点
                 </span>
               </CardContent>
             </Card>
