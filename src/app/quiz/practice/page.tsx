@@ -5,9 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -23,89 +21,33 @@ import {
   ArrowRight,
   RotateCcw,
   Sparkles,
+  Loader2,
+  Brain,
 } from "lucide-react";
 
-// 模拟题目
-const mockQuestions = [
-  {
-    id: "1",
-    type: "single_choice",
-    stem: "某航空企业安全管理体系（SMS）的核心支柱不包括以下哪一项？",
-    options: [
-      { label: "A", text: "安全政策" },
-      { label: "B", text: "风险管理" },
-      { label: "C", text: "市场营销" },
-      { label: "D", text: "安全保证" },
-    ],
-    answer: "C",
-    explanation:
-      "SMS四大支柱为：安全政策、风险管理、安全保证和安全促进。市场营销不属于SMS体系范畴。",
-    difficulty: 3,
-  },
-  {
-    id: "2",
-    type: "single_choice",
-    stem: "SWOT分析法中的'O'代表什么？",
-    options: [
-      { label: "A", text: "优势" },
-      { label: "B", text: "劣势" },
-      { label: "C", text: "机会" },
-      { label: "D", text: "威胁" },
-    ],
-    answer: "C",
-    explanation:
-      "SWOT中S=Strengths（优势），W=Weaknesses（劣势），O=Opportunities（机会），T=Threats（威胁）。",
-    difficulty: 1,
-  },
-  {
-    id: "3",
-    type: "true_false",
-    stem: "坚持党要管党、全面从严治党是新时代党的建设总要求之一。",
-    options: [
-      { label: "A", text: "正确" },
-      { label: "B", text: "错误" },
-    ],
-    answer: "A",
-    explanation:
-      "新时代党的建设总要求明确提出：坚持和加强党的全面领导，坚持党要管党、全面从严治党。",
-    difficulty: 1,
-  },
-  {
-    id: "4",
-    type: "multi_choice",
-    stem: "以下哪些属于波特五力模型的竞争力量？（多选）",
-    options: [
-      { label: "A", text: "供应商的议价能力" },
-      { label: "B", text: "购买者的议价能力" },
-      { label: "C", text: "企业内部管理水平" },
-      { label: "D", text: "新进入者的威胁" },
-    ],
-    answer: "A,B,D",
-    explanation:
-      "波特五力模型包括：供应商议价能力、购买者议价能力、新进入者威胁、替代品威胁、同业竞争者竞争程度。企业内部管理水平不属于五力模型。",
-    difficulty: 3,
-  },
-  {
-    id: "5",
-    type: "essay",
-    stem: "请结合实际，分析某航空企业在数字化转型过程中面临的主要挑战及应对策略。",
-    options: [],
-    answer:
-      "答题要点：1. 技术基础设施升级需求；2. 数据治理和安全挑战；3. 人才队伍建设；4. 业务流程再造；5. 客户体验提升。",
-    explanation:
-      "这是一道综合分析题，需要结合航空行业特点和某航空企业实际情况，从技术、管理、人才等多个维度进行分析。",
-    difficulty: 5,
-  },
-];
+interface Question {
+  id: string;
+  type: string;
+  stem: string;
+  options: { label: string; text: string }[];
+  answer: string;
+  explanation: string;
+  difficulty: number;
+}
 
 export default function PracticePage() {
+  // 设置状态
   const [started, setStarted] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [category, setCategory] = useState("全部");
   const [questionCount, setQuestionCount] = useState("10");
+  const [genError, setGenError] = useState("");
+
+  // 答题状态
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [questions] = useState(mockQuestions);
 
   const currentQuestion = questions[currentIndex];
   const isLast = currentIndex === questions.length - 1;
@@ -113,60 +55,86 @@ export default function PracticePage() {
 
   const handleSelectOption = (label: string) => {
     if (submitted) return;
-    if (currentQuestion.type === "multi_choice") {
-      const selected = currentAnswer ? currentAnswer.split(",") : [];
-      const newSelected = selected.includes(label)
-        ? selected.filter((l) => l !== label)
-        : [...selected, label];
-      setAnswers({
-        ...answers,
-        [currentQuestion.id]: newSelected.sort().join(","),
-      });
-    } else {
-      setAnswers({ ...answers, [currentQuestion.id]: label });
-    }
+    setAnswers({ ...answers, [currentQuestion.id]: label });
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-  };
+  const handleSubmit = () => setSubmitted(true);
 
   const handleNext = () => {
     setSubmitted(false);
-    setCurrentIndex((prev) => Math.min(prev + 1, questions.length - 1));
+    if (isLast) {
+      // 所有题目答完
+      return;
+    }
+    setCurrentIndex((prev) => prev + 1);
   };
 
-  const handleStart = () => {
-    setStarted(true);
+  const handleStart = async () => {
+    setGenError("");
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/ai/generate-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          questionType: "single_choice",
+          count: parseInt(questionCount),
+        }),
+      });
+      const data = await res.json();
+      if (data.questions && data.questions.length > 0) {
+        setQuestions(data.questions);
+        setCurrentIndex(0);
+        setAnswers({});
+        setSubmitted(false);
+        setStarted(true);
+      } else {
+        setGenError(data.error || "生成失败，请重试");
+      }
+    } catch {
+      setGenError("网络错误，请检查网络后重试");
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const isCorrect =
-    submitted && currentAnswer === currentQuestion?.answer;
+  const isCorrect = submitted && currentAnswer === currentQuestion?.answer;
 
-  // 开始前的设置页面
+  const correctCount = questions.filter(
+    (q) => answers[q.id] === q.answer
+  ).length;
+
+  const allDone = questions.length > 0 &&
+    questions.every((q) => answers[q.id] !== undefined);
+
+  // ===== 设置页面 =====
   if (!started) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">随机练习</h1>
+          <h1 className="text-2xl font-bold">AI 智能出题</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            自定义练习范围，开始答题
+            基于知识库内容，AI 实时生成单选题
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">练习设置</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles size={18} className="text-indigo-500" />
+              出题设置
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>选择分类</Label>
+              <Label>知识范围</Label>
               <Select value={category} onValueChange={(v) => setCategory(v || "全部")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="全部">全部</SelectItem>
+                  <SelectItem value="全部">全部知识</SelectItem>
                   <SelectItem value="公文新闻">公文新闻</SelectItem>
                   <SelectItem value="管理学">管理学</SelectItem>
                   <SelectItem value="党建">党建</SelectItem>
@@ -190,16 +158,34 @@ export default function PracticePage() {
               </Select>
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={handleStart} className="flex-1">
-                开始练习
-              </Button>
-              <Link href="/quiz/practice?ai=true">
-                <Button variant="outline">
-                  <Sparkles size={16} className="mr-1" />
-                  AI出题
-                </Button>
-              </Link>
+            {genError && (
+              <div className="bg-red-50 text-red-600 rounded-lg p-3 text-sm flex items-start gap-2">
+                <XCircle size={16} className="mt-0.5 shrink-0" />
+                {genError}
+              </div>
+            )}
+
+            <Button
+              onClick={handleStart}
+              className="w-full"
+              disabled={generating}
+              size="lg"
+            >
+              {generating ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  AI 正在生成题目...
+                </>
+              ) : (
+                <>
+                  <Brain size={18} className="mr-2" />
+                  开始 AI 出题
+                </>
+              )}
+            </Button>
+
+            <div className="bg-indigo-50 rounded-lg p-3 text-xs text-muted-foreground">
+              <p>AI 会根据你知识库中的内容实时生成全新的单选题。每次生成的题目都不相同，确保练习效果。</p>
             </div>
 
             <Link href="/quiz">
@@ -214,36 +200,75 @@ export default function PracticePage() {
     );
   }
 
-  // 答题界面
+  // ===== 答题完成页 =====
+  if (allDone && submitted) {
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <Card className="text-center">
+          <CardContent className="p-8">
+            <div className="text-4xl mb-4">
+              {correctCount >= questions.length * 0.6 ? "🎉" : "📚"}
+            </div>
+            <h2 className="text-2xl font-bold mb-2">练习完成</h2>
+            <div className="text-5xl font-bold text-primary my-6">
+              {correctCount} / {questions.length}
+            </div>
+            <p className="text-muted-foreground">
+              正确率 {Math.round((correctCount / questions.length) * 100)}%
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3">
+          {questions.map((q, i) => {
+            const userAns = answers[q.id];
+            const isRight = userAns === q.answer;
+            return (
+              <Card key={q.id} className={isRight ? "border-l-4 border-l-green-400" : "border-l-4 border-l-red-400"}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium">第{i + 1}题</span>
+                    {isRight ? (
+                      <CheckCircle size={14} className="text-green-500" />
+                    ) : (
+                      <XCircle size={14} className="text-red-500" />
+                    )}
+                  </div>
+                  <p className="text-sm">{q.stem}</p>
+                  {!isRight && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-red-500">你的答案：{userAns}</span>
+                      {" → "}
+                      <span className="text-green-600 font-medium">正确答案：{q.answer}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-3 justify-center">
+          <Button variant="outline" onClick={() => { setStarted(false); setQuestions([]); }}>
+            重新出题
+          </Button>
+          <Link href="/quiz">
+            <Button>返回题库</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== 答题界面 =====
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* 进度条 */}
+      {/* 顶部信息 */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          第 {currentIndex + 1} / {questions.length} 题
-        </span>
-        <span>
-          已答 {Object.keys(answers).length} 题
-        </span>
-        <Badge
-          variant="secondary"
-          className={
-            currentQuestion.type === "single_choice"
-              ? "bg-blue-100 text-blue-700"
-              : currentQuestion.type === "multi_choice"
-              ? "bg-green-100 text-green-700"
-              : currentQuestion.type === "true_false"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-purple-100 text-purple-700"
-          }
-        >
-          {currentQuestion.type === "single_choice"
-            ? "单选题"
-            : currentQuestion.type === "multi_choice"
-            ? "多选题"
-            : currentQuestion.type === "true_false"
-            ? "判断题"
-            : "案例分析题"}
+        <span>第 {currentIndex + 1} / {questions.length} 题</span>
+        <span>已答 {Object.keys(answers).length} 题</span>
+        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+          单选题
         </Badge>
       </div>
 
@@ -251,88 +276,53 @@ export default function PracticePage() {
       <div className="w-full bg-muted rounded-full h-1.5">
         <div
           className="bg-primary h-1.5 rounded-full transition-all"
-          style={{
-            width: `${((currentIndex + 1) / questions.length) * 100}%`,
-          }}
+          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
 
-      {/* 题目卡片 */}
+      {/* 题目 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-normal leading-relaxed">
             {currentQuestion.stem}
           </CardTitle>
-          {currentQuestion.type === "multi_choice" && (
-            <p className="text-xs text-muted-foreground">
-              多选题：请选择所有正确答案
-            </p>
-          )}
         </CardHeader>
         <CardContent className="space-y-3">
-          {currentQuestion.type === "essay" ? (
-            <div className="space-y-3">
-              <textarea
-                className="w-full min-h-[150px] p-3 border rounded-lg resize-y text-sm"
-                placeholder="请输入你的答案..."
-                value={currentAnswer}
-                onChange={(e) =>
-                  setAnswers({
-                    ...answers,
-                    [currentQuestion.id]: e.target.value,
-                  })
-                }
-                disabled={submitted}
-              />
-            </div>
-          ) : (
-            currentQuestion.options.map((opt) => {
-              const isSelected =
-                currentQuestion.type === "multi_choice"
-                  ? currentAnswer.split(",").includes(opt.label)
-                  : currentAnswer === opt.label;
-              const isCorrectOption =
-                submitted && currentQuestion.answer.includes(opt.label);
-              const isWrongSelected =
-                submitted &&
-                isSelected &&
-                !currentQuestion.answer.includes(opt.label);
+          {currentQuestion.options?.map((opt) => {
+            const isSelected = currentAnswer === opt.label;
+            const isCorrectOption = submitted && currentQuestion.answer === opt.label;
+            const isWrongSelected = submitted && isSelected && !isCorrectOption;
 
-              return (
-                <button
-                  key={opt.label}
-                  onClick={() => handleSelectOption(opt.label)}
-                  disabled={submitted}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors flex items-center gap-3 ${
-                    isCorrectOption
-                      ? "border-green-500 bg-green-50"
-                      : isWrongSelected
-                      ? "border-red-500 bg-red-50"
-                      : isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
+            return (
+              <button
+                key={opt.label}
+                onClick={() => handleSelectOption(opt.label)}
+                disabled={submitted}
+                className={`w-full text-left p-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                  isCorrectOption
+                    ? "border-green-500 bg-green-50"
+                    : isWrongSelected
+                    ? "border-red-500 bg-red-50"
+                    : isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm shrink-0 ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border"
                   }`}
                 >
-                  <span
-                    className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm shrink-0 ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border"
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                  <span className="text-sm">{opt.text}</span>
-                  {isCorrectOption && (
-                    <CheckCircle size={18} className="text-green-500 ml-auto" />
-                  )}
-                  {isWrongSelected && (
-                    <XCircle size={18} className="text-red-500 ml-auto" />
-                  )}
-                </button>
-              );
-            })
-          )}
+                  {opt.label}
+                </span>
+                <span className="text-sm">{opt.text}</span>
+                {isCorrectOption && <CheckCircle size={18} className="text-green-500 ml-auto" />}
+                {isWrongSelected && <XCircle size={18} className="text-red-500 ml-auto" />}
+              </button>
+            );
+          })}
         </CardContent>
       </Card>
 
@@ -357,9 +347,7 @@ export default function PracticePage() {
               <Lightbulb size={16} className="text-yellow-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium">解析：</p>
-                <p className="text-sm text-muted-foreground">
-                  {currentQuestion.explanation}
-                </p>
+                <p className="text-sm text-muted-foreground">{currentQuestion.explanation}</p>
               </div>
             </div>
           </CardContent>
@@ -381,12 +369,10 @@ export default function PracticePage() {
               提交答案
             </Button>
           ) : isLast ? (
-            <Link href="/quiz">
-              <Button>
-                完成练习
-                <ArrowRight size={16} className="ml-1" />
-              </Button>
-            </Link>
+            <Button onClick={handleNext}>
+              查看结果
+              <ArrowRight size={16} className="ml-1" />
+            </Button>
           ) : (
             <Button onClick={handleNext}>
               下一题
@@ -394,25 +380,14 @@ export default function PracticePage() {
             </Button>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1));
-          }}
-          disabled={isLast || !submitted}
-        >
-          跳过
-        </Button>
+        <div />
       </div>
 
-      {/* 返回链接 */}
       <div className="text-center">
-        <Link href="/quiz">
-          <Button variant="ghost" size="sm">
-            <RotateCcw size={14} className="mr-1" />
-            重新设置练习
-          </Button>
-        </Link>
+        <Button variant="ghost" size="sm" onClick={() => { setStarted(false); setQuestions([]); }}>
+          <RotateCcw size={14} className="mr-1" />
+          重新出题
+        </Button>
       </div>
     </div>
   );
