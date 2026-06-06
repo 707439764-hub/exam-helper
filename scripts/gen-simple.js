@@ -64,7 +64,17 @@ async function call(module) {
           .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3'); // 补全未加引号的 key
         p = JSON.parse(cleaned);
       }
-      return (p.questions||[]).map((q,i)=>({id:`${module}_${Date.now()}_${Math.random().toString(36).slice(2,5)}_${i}`,module:q.module||module,stem:q.stem,options:q.options||[],answer:q.answer,explanation:q.explanation||""}));
+      const VALID_MODULES = ["管理学", "党建时政", "南航专项", "行测"];
+      return (p.questions || []).map((q, i) => ({
+        id: `${module}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}_${i}`,
+        module: VALID_MODULES.includes(q.module) ? q.module : module,
+        stem: q.stem,
+        options: q.options || [],
+        answer: q.answer,
+        explanation: q.explanation || "",
+        createdAt: new Date().toISOString().slice(0, 10),
+        policyYear: (q.module === "党建时政" || module === "党建时政") ? new Date().getFullYear() : undefined,
+      }));
     }catch(e){if(r===2)throw e;await new Promise(r=>setTimeout(r,2000));}
   }
 }
@@ -82,7 +92,21 @@ async function main(){
       const t1=Date.now();
       try{
         const qs=await call(mod);
-        if(qs.length){all.push(...qs);fs.writeFileSync(OUT,JSON.stringify(all,null,2))}
+        if (qs.length) {
+          // 按题干前20字去重，过滤掉与已有题目高度相似的新题
+          const existingStems = new Set(all.map(q => q.stem.slice(0, 20)));
+          const deduped = qs.filter(q => {
+            const key = q.stem.slice(0, 20);
+            if (existingStems.has(key)) return false;
+            existingStems.add(key);
+            return true;
+          });
+          if (deduped.length < qs.length) {
+            console.log(`  ⚠️ 去重过滤 ${qs.length - deduped.length} 道重复题`);
+          }
+          all.push(...deduped);
+          fs.writeFileSync(OUT,JSON.stringify(all,null,2));
+        }
         const done=all.filter(q=>q.module===mod).length;
         const pct=Math.round(done/target*100);
         const s=Math.round((Date.now()-t1)/1000);

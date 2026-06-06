@@ -53,12 +53,17 @@ export default function PracticePage() {
   const correctCount = history.filter((h) => h.isCorrect).length;
 
   // 加载题库
-  useEffect(() => {
-    fetch("/data/question-bank.json")
+  const loadBank = () => {
+    const url = category === "全部"
+      ? "/data/question-bank.json"
+      : `/data/bank-${category}.json`;
+    fetch(url)
       .then((r) => r.json())
-      .then((data) => { setBank(data); setBankLoaded(true); })
+      .then((data) => { setBank(Array.isArray(data) ? data : []); setBankLoaded(true); })
       .catch(() => setBankLoaded(true));
-  }, []);
+  };
+
+  useEffect(() => { loadBank(); }, [category]);
 
   const saveWrong = (q: Question, userAnswer: string) => {
     try {

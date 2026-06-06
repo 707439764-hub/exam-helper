@@ -30,7 +30,7 @@ export default function QuestionsPage() {
   const PER_PAGE = 30;
 
   useEffect(() => {
-    fetch("/data/question-bank.json")
+    fetch("/data/bank-index.json")
       .then((r) => r.json())
       .then((data) => setQuestions(data))
       .catch(() => setQuestions([]))
