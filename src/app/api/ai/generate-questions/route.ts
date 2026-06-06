@@ -104,7 +104,18 @@ async function callAI(
 严格JSON格式：
 {"questions":[{"type":"single_choice","module":"管理学|党建时政|南航专项|行测|民航法规","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
 
-  const userMessage = `命题素材（仅供参考，可结合你掌握的南航及时政知识扩展）：\n${kpText}\n\n请生成${count}道高质量单选题，优先按配比：管理学约${Math.round(count*8/30)}题、党建时政约${Math.round(count*9/30)}题、南航专项约${Math.round(count*5/30)}题、行测约${Math.round(count*6/30)}题、民航法规约${Math.round(count*2/30)}题。务必具体、不笼统，每道题都要让考生有真实考场的感觉。`;
+  const ratios: Record<string, number> = {
+    管理学: 0.27,
+    党建时政: 0.30,
+    南航专项: 0.17,
+    行测: 0.20,
+    民航法规: 0.06,
+  };
+  const distribution = Object.entries(ratios)
+    .map(([mod, r]) => `${mod}约${Math.max(1, Math.round(count * r))}题`)
+    .join("、");
+
+  const userMessage = `命题素材（仅供参考，可结合你掌握的南航及时政知识扩展）：\n${kpText}\n\n请生成${count}道高质量单选题，优先按配比：${distribution}。务必具体、不笼统，每道题都要让考生有真实考场的感觉。`;
 
   const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/messages`, {
     method: "POST",
@@ -141,21 +152,29 @@ function generateLocal(
   const shuffled = [...kps].sort(() => Math.random() - 0.5);
   const selected = shuffled.slice(0, Math.min(count, shuffled.length));
   const questions = [];
+
   for (let i = 0; i < selected.length; i++) {
     const kp = selected[i];
-    const s = kp.content.split(/[。；]/).filter((x: string) => x.trim().length > 10);
-    const correct = s[0]?.trim().slice(0, 80) || kp.content.slice(0, 80);
-    const wrong = s[1]?.trim().slice(0, 80) || "与正确表述有偏差的理解";
+    const sentences = kp.content.split(/[。；]/).filter((x: string) => x.trim().length > 10);
+    const correct = sentences[0]?.trim().slice(0, 80) || kp.content.slice(0, 80);
+    const distractor1 = sentences[1]?.trim().slice(0, 80) || "与正确表述存在关键偏差";
+    const distractor2 = sentences[2]?.trim().slice(0, 80) || "应结合实际情况灵活处理，不可机械执行";
+    const distractor3 = "应优先保障运行效率，在安全允许范围内操作";
+
+    // 随机打乱选项顺序，避免答案永远是 A
+    const labels = ["A", "B", "C", "D"];
+    const texts = [correct, distractor1, distractor2, distractor3];
+    const order = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    const correctLabel = labels[order.indexOf(0)];
+
     questions.push({
-      id: `local_${Date.now()}_${i}`, type: "single_choice",
-      stem: `作为值班经理，以下是关于"${kp.title}"的工作场景。以下理解最准确的是？`,
-      options: [
-        { label: "A", text: correct },
-        { label: "B", text: wrong },
-        { label: "C", text: "应结合实际情况灵活处理，不可机械执行" },
-        { label: "D", text: "应优先保障运行效率，在安全允许范围内操作" },
-      ],
-      answer: "A", explanation: `"${kp.title}"的核心要点：${kp.content.slice(0, 200)}`, difficulty: 3,
+      id: `local_${Date.now()}_${i}`,
+      type: "single_choice",
+      stem: `关于"${kp.title}"，以下说法最准确的是？`,
+      options: order.map((idx, pos) => ({ label: labels[pos], text: texts[idx] })),
+      answer: correctLabel,
+      explanation: `"${kp.title}"的核心要点：${kp.content.slice(0, 200)}`,
+      difficulty: 3,
     });
   }
   return questions;
