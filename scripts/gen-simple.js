@@ -7,7 +7,7 @@ const KEY = process.env.DEEPSEEK_API_KEY;
 if (!KEY) { console.error("❌ DEEPSEEK_API_KEY missing"); process.exit(1); }
 
 const BATCH = 5;
-const TARGETS = [["管理学",500],["党建时政",200],["南航专项",200],["行测",100]];
+const TARGETS = [["管理学",400],["党建时政",200],["南航专项",200],["行测",200]];
 
 const PROMPTS = {
   "管理学":"机务班组长/MCC值班经理场景。具体机型故障时间约束，4个管理风格选项。",
@@ -38,11 +38,18 @@ const PROMPTS = {
 【大运行值班管控】人、机、料、法、环要素协同。机务需与运行、飞行等部门配合，目标侧重有别。 \
 构建立体化管控思维，提升沟通协调和应急处突能力。 \
 【培训优化】破除形式主义精简集中授课、分级落实下放自主权、工学融合嵌入岗位一线、按需施教紧扣安全经营精准赋能、重实效轻痕迹。",
-  "行测":"数字运算/逻辑判断/图形推理/言语理解。完整数据唯一解。module必须填'行测'不得拆分。",
+  "行测": `请严格按以下四类出题，本批${BATCH}题尽量覆盖所有类型：
+1.数字运算：给出完整数据，确保有唯一整数解，不出现"检查"或自相矛盾的解析；
+2.逻辑判断：给出完整前提条件，结论可由前提严格推出；
+3.图形推理：用文字清晰描述图形规律（如"每行图形边数依次增加1"），4个选项描述要有明显区分；
+4.言语理解：给出完整语段，考查主旨概括或词语填空，选项差异明显。
+module必须填'行测'不得拆分。完整数据，唯一正确答案。`,
 };
 
 async function call(module) {
-  const sys = `南航机务竞聘命题人。出"${module}"单选题ABCD。JSON:{"questions":[{"module":"${module}","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
+  const sys = `南航机务竞聘命题人。出"${module}"单选题ABCD。
+答案分布要求：本批${BATCH}道题中，A/B/C/D答案尽量各占1-2题，严禁答案集中在A或B。
+JSON:{"questions":[{"module":"${module}","stem":"","options":[{"label":"A","text":""},{"label":"B","text":""},{"label":"C","text":""},{"label":"D","text":""}],"answer":"","explanation":""}]}`;
   const body = JSON.stringify({model:"deepseek-chat",max_tokens:4096,temperature:1.0,messages:[{role:"system",content:sys},{role:"user",content:`出${BATCH}道${module}题。${PROMPTS[module]||""}`}]});
   for(let r=0;r<3;r++){
     try{
