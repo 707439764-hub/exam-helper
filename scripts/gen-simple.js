@@ -51,8 +51,19 @@ async function call(module) {
       const d = await res.json();
       const t = d.choices?.[0]?.message?.content||"";
       let m = t.match(/\{[\s\S]*\}/);
-      if(!m) throw new Error("No JSON");
-      let p; try{p=JSON.parse(m[0])}catch(e){p=JSON.parse(m[0].replace(/\n/g," ").replace(/,(\s*[}\]])/g,"$1"))}
+      if (!m) throw new Error("No JSON in response");
+      let p;
+      try {
+        p = JSON.parse(m[0]);
+      } catch (e) {
+        // 记录原始内容便于排查，再尝试容错修复
+        console.warn(`[JSON解析失败] 原始内容片段: ${m[0].slice(0, 200)}`);
+        const cleaned = m[0]
+          .replace(/[\r\n\t]/g, " ")          // 替换换行符
+          .replace(/,(\s*[}\]])/g, "$1")      // 移除尾逗号
+          .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3'); // 补全未加引号的 key
+        p = JSON.parse(cleaned);
+      }
       return (p.questions||[]).map((q,i)=>({id:`${module}_${Date.now()}_${Math.random().toString(36).slice(2,5)}_${i}`,module:q.module||module,stem:q.stem,options:q.options||[],answer:q.answer,explanation:q.explanation||""}));
     }catch(e){if(r===2)throw e;await new Promise(r=>setTimeout(r,2000));}
   }

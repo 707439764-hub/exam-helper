@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +37,14 @@ export default function QuestionsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = questions.filter((q) => {
-    const m = filter === "全部" || q.module === filter;
-    const s = !search || q.stem.includes(search) || q.explanation.includes(search);
-    return m && s;
-  });
+  const filtered = useMemo(() =>
+    questions.filter((q) => {
+      const m = filter === "全部" || q.module === filter;
+      const s = !search || q.stem.includes(search) || q.explanation.includes(search);
+      return m && s;
+    }),
+    [questions, filter, search]
+  );
 
   const total = filtered.length;
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);

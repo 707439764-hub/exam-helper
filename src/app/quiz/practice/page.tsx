@@ -63,8 +63,14 @@ export default function PracticePage() {
   const saveWrong = (q: Question, userAnswer: string) => {
     try {
       const stored = localStorage.getItem("wrong_answers");
-      const wrong = stored ? JSON.parse(stored) : [];
-      wrong.push({ q: { ...q, id: Date.now().toString() }, userAnswer, date: new Date().toISOString().slice(0, 10) });
+      const wrong: { q: Question; userAnswer: string; date: string }[] = stored ? JSON.parse(stored) : [];
+      const entry = { q: { ...q }, userAnswer, date: new Date().toISOString().slice(0, 10) };
+      const idx = wrong.findIndex((w) => w.q.stem === q.stem);
+      if (idx >= 0) {
+        wrong[idx] = entry; // 同一题更新而非追加
+      } else {
+        wrong.push(entry);
+      }
       localStorage.setItem("wrong_answers", JSON.stringify(wrong.slice(-100)));
     } catch (_) {}
   };
