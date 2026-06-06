@@ -3,9 +3,14 @@
  * 用于 AI 总结知识点和生成题目
  */
 
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY!;
 const DEEPSEEK_BASE_URL =
   process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/anthropic";
+
+function getApiKey(): string {
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key) throw new Error("未配置 DEEPSEEK_API_KEY，请检查环境变量");
+  return key;
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -16,6 +21,7 @@ async function callDeepSeek(
   messages: ChatMessage[],
   systemPrompt: string
 ): Promise<string> {
+  const DEEPSEEK_API_KEY = getApiKey();
   const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/messages`, {
     method: "POST",
     headers: {
@@ -36,7 +42,9 @@ async function callDeepSeek(
   }
 
   const data = await response.json();
-  return data.content[0].text;
+  const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+  if (!textBlock?.text) throw new Error("AI返回格式异常，未找到文本内容");
+  return textBlock.text;
 }
 
 /**

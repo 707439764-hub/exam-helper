@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { knowledgeData } from "@/data/knowledge";
 import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
 
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY!;
 const DEEPSEEK_BASE_URL =
   process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/anthropic";
+
+function getApiKey(): string {
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key) throw new Error("未配置 DEEPSEEK_API_KEY，请检查环境变量");
+  return key;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,7 +74,7 @@ async function callAI(
   kps: { title: string; content: string; category: string }[],
   count: number
 ) {
-  if (!DEEPSEEK_API_KEY) throw new Error("未配置 DEEPSEEK_API_KEY");
+  const DEEPSEEK_API_KEY = getApiKey();
 
   const kpText = kps.map((kp, i) =>
     `[${i + 1}]【${kp.category}】${kp.title}\n${kp.content}`
@@ -110,9 +115,12 @@ async function callAI(
   if (!response.ok) throw new Error(`API错误: ${response.status}`);
   const data = await response.json();
   // DeepSeek v4-pro 默认开启 thinking，content 数组可能包含 thinking 和 text 两种类型
-  const textContent = data.content?.find((c: { type: string }) => c.type === "text");
-  const text = textContent?.text || "";
-  if (!text) throw new Error("AI未返回有效文本内容");
+  const textContent = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+  const text = textContent?.text;
+  if (!text) {
+    console.error("[出题] AI返回结构异常:", JSON.stringify(data).slice(0, 200));
+    throw new Error("AI未返回有效文本内容");
+  }
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     const parsed = JSON.parse(jsonMatch[0]);

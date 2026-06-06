@@ -70,15 +70,14 @@ export default function PracticePage() {
   };
 
   // 从题库随机取一题
-  const pickQuestion = () => {
+  const pickQuestion = (currentBank: Question[] = bank) => {
     const modFilter = MOD_MAP[category] || "";
-    const pool = modFilter ? bank.filter((q) => q.module === modFilter) : bank;
+    const pool = modFilter ? currentBank.filter((q) => q.module === modFilter) : currentBank;
     const available = pool.filter((q) => !usedIds.has(q.id));
     if (available.length === 0) {
-      // 全部用完，重置
       setUsedIds(new Set());
-      const reset = pool;
-      const q = reset[Math.floor(Math.random() * reset.length)];
+      const q = pool[Math.floor(Math.random() * pool.length)];
+      if (!q) return null;
       setUsedIds(new Set([q.id]));
       return q;
     }
@@ -92,7 +91,7 @@ export default function PracticePage() {
     setHistory([]);
     setStopped(false);
     setUsedIds(new Set());
-    setCurrent(pickQuestion());
+    setCurrent(pickQuestion(bank));
   };
 
   const handleSubmit = () => {
