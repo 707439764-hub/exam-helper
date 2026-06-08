@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
   BookOpen,
@@ -13,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { knowledgeData } from "@/data/knowledge";
+import { StudyStats } from "@/components/StudyStats";
 
 const categories = [
   { name: "公文新闻", icon: "📰", color: "bg-blue-100 text-blue-700" },
@@ -109,22 +109,14 @@ export default function HomePage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <TrendingUp size={18} />
-              学习进度
+              知识库分布
             </CardTitle>
-            <Link href="/stats" className="text-sm text-primary hover:underline">
-              详细统计
+            <Link href="/knowledge" className="text-sm text-primary hover:underline">
+              查看知识库
             </Link>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {categories.map((cat) => (
-              <div key={cat.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">{cat.name}</span>
-                  <span className="text-muted-foreground">65%</span>
-                </div>
-                <Progress value={65} className="h-2" />
-              </div>
-            ))}
+          <CardContent>
+            <StudyStats />
           </CardContent>
         </Card>
       </div>

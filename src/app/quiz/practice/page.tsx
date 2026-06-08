@@ -33,7 +33,7 @@ const MOD_MAP: Record<string, string> = {
   "全部": "",
   "管理学": "管理学",
   "党建时政": "党建时政",
-  "南航专项": "南航专项",
+  "专项知识": "南航专项",
   "行测": "行测",
 };
 
@@ -105,11 +105,21 @@ export default function PracticePage() {
     setCurrent(pickQuestion(bank));
   };
 
+  const saveHistory = (isCorrect: boolean) => {
+    try {
+      const stored = localStorage.getItem("quiz_history");
+      const hist: { isCorrect: boolean; date: string }[] = stored ? JSON.parse(stored) : [];
+      hist.push({ isCorrect, date: new Date().toISOString().slice(0, 10) });
+      localStorage.setItem("quiz_history", JSON.stringify(hist.slice(-500)));
+    } catch (_) {}
+  };
+
   const handleSubmit = () => {
     if (!current || !curAns) return;
     setSubmitted(true);
     const isCorrect = curAns === current.answer;
     setHistory((prev) => [...prev, { q: current, userAnswer: curAns, isCorrect }]);
+    saveHistory(isCorrect);
     if (!isCorrect) saveWrong(current, curAns);
   };
 
@@ -123,7 +133,7 @@ export default function PracticePage() {
 
   // ===== 首页 =====
   if (!started) {
-    const counts: Record<string, number> = { "管理学": 0, "党建时政": 0, "南航专项": 0, "行测": 0 };
+    const counts: Record<string, number> = { "管理学": 0, "党建时政": 0, "专项知识": 0, "行测": 0 };
     bank.forEach((q) => { if (q.module in counts) counts[q.module]++; });
 
     return (
@@ -145,7 +155,7 @@ export default function PracticePage() {
                   <SelectItem value="全部">全部（{bank.length}题）</SelectItem>
                   <SelectItem value="管理学">管理学（{counts["管理学"]}题）</SelectItem>
                   <SelectItem value="党建时政">党建时政（{counts["党建时政"]}题）</SelectItem>
-                  <SelectItem value="南航专项">南航专项（{counts["南航专项"]}题）</SelectItem>
+                  <SelectItem value="专项知识">专项知识（{counts["专项知识"]}题）</SelectItem>
                   <SelectItem value="行测">行测（{counts["行测"]}题）</SelectItem>
                 </SelectContent>
               </Select>

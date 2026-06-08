@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "个人学习助手",
-  description: "学习助手 - 知识点管理、AI总结、智能出题",
+  description: "个人学习助手 - 知识点管理、AI总结、智能出题练习",
 };
 
 export default function RootLayout({

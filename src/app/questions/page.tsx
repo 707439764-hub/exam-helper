@@ -20,6 +20,8 @@ interface Question {
 }
 
 const MODULES = ["全部", "管理学", "党建时政", "南航专项", "行测"];
+const MODULE_LABELS: Record<string, string> = { "南航专项": "专项知识" };
+const label = (m: string) => MODULE_LABELS[m] ?? m;
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -61,7 +63,7 @@ export default function QuestionsPage() {
         <div>
           <h1 className="text-2xl font-bold">题库</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {loading ? "加载中..." : `${questions.length} 道题目 · AI生成 · 南方新华命题风格`}
+            {loading ? "加载中..." : `${questions.length} 道题目 · AI 生成`}
           </p>
         </div>
         <Link href="/quiz/practice">
@@ -78,7 +80,7 @@ export default function QuestionsPage() {
             onClick={() => { setFilter(m === filter ? "全部" : m); setPage(0); }}>
             <CardContent className="p-3 text-center">
               <p className="text-2xl font-bold">{counts[m] || 0}</p>
-              <p className="text-xs text-muted-foreground">{m}</p>
+              <p className="text-xs text-muted-foreground">{label(m)}</p>
             </CardContent>
           </Card>
         ))}
@@ -92,7 +94,7 @@ export default function QuestionsPage() {
         </div>
         <Select value={filter} onValueChange={(v) => { setFilter(v || "全部"); setPage(0); }}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>{MODULES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+          <SelectContent>{MODULES.map((m) => <SelectItem key={m} value={m}>{label(m)}</SelectItem>)}</SelectContent>
         </Select>
       </div>
 
@@ -112,7 +114,7 @@ export default function QuestionsPage() {
                       q.module === "管理学" ? "bg-green-100 text-green-700" :
                       q.module === "党建时政" ? "bg-red-100 text-red-700" :
                       q.module === "南航专项" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                    }>{q.module}</Badge>
+                    }>{label(q.module)}</Badge>
                     <span className="text-xs text-muted-foreground">#{page * PER_PAGE + i + 1}</span>
                   </div>
                   <p className="text-sm font-medium">{q.stem}</p>
